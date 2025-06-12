@@ -2,6 +2,7 @@
 # Adam Smith <lddemo@adamooo.com>
 # Flask app structure derived from https://code.visualstudio.com/docs/python/tutorial-flask
 # POTA JSON data access and handling derived from: https://www.kc8jc.com/2023/02/02/simple-pota-hunter-script/
+# LaunchDarkly Python SDK tutorial: https://launchdarkly.com/docs/sdk/server-side/python
 
 import re
 from datetime import datetime
@@ -9,7 +10,35 @@ from datetime import datetime
 from flask import Flask
 from flask import render_template
 
+import ldclient
+from ldclient.config import Config
+from ldclient import Context
+
+# LaunchDarkly SDK setup - substitute with your own SDK key and feature flag key
+# SDK keys for demo: Test environment: sdk-fad800e4-2188-45ce-aac0-27a022667260
+#                   Production environment: sdk-bd1e3e0d-121d-4166-aacb-5757ec9efbfb
+sdk_key = "sdk-fad800e4-2188-45ce-aac0-27a022667260"
+# Feature flag key for demo: demo-feature
+feature_flag_key = "demo-feature"
+
+if __name__ == "__main__":
+    if not sdk_key:
+        print("*** Please set the SDK key in code before running the demo")
+        exit()
+    if not feature_flag_key:
+        print("*** Please set the flag key in code before running the demo")
+        exit()
+
+    ldclient.set_config(Config(sdk_key))
+
+    # check that the SDK  initialized successfully
+    if not ldclient.get().is_initialized():
+        print("*** SDK failed to initialize. Please check your internet connection and SDK credential for any typo.")
+        exit()
+    print("*** SDK successfully initialized")
+
 app = Flask(__name__)
+
 
 @app.route("/")
 def home():
@@ -59,6 +88,24 @@ def spots(mode=None, locations="US-"): # default to no mode filter and all US lo
         locs=locations,
         date=datetime.now()
     )
+
+@app.route("/test/flag")
+def test_flag():
+    ldclient.set_config(Config(sdk_key))
+    # check that the SDK  initialized successfully
+    if not ldclient.get().is_initialized():
+        print("*** SDK failed to initialize. Please check your internet connection and SDK credential for any typo.")
+        exit()
+    print("*** SDK successfully initialized")
+
+    # Set up the evaluation context. This context should appear on your
+    # LaunchDarkly contexts dashboard soon after you run the demo.
+    context = \
+        Context.builder('example-user-key').kind('user').name('Demo User').build()
+
+    flag_value = ldclient.get().variation(feature_flag_key, context, False)
+    
+    return f"Flag name: \"{feature_flag_key}\" has value: \"{flag_value}\""
 
 @app.route("/about/")
 def about():
