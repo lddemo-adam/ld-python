@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Current POTA Spots</title>
+    </head>
+    <body>
+        It's {{ date.strftime("%A, %d %B, %Y at %X") }} and {{ count }} POTA spots were retrieved.<br />
+        {%if mode or locs %}
+            <strong>Filtered {{ selected }} spots</strong> for:
+                {%if mode %} mode={{ mode }} {% endif %} 
+                {%if mode and locs %} and {% endif %}
+                {%if locs %} locations={{ locs }} {% endif %}
+        {% else %}
+            Showing unfiltered current spots.  Provide /mode/SSB,FT8 or e.g. /locs/US-CA,US-MA to filter.
+        {% endif %}
+        <br /> <br />
+        <table>
+            <tr>
+                <th>Frequency</th>
+                <th>Activator</th>
+                <th>Reference</th>
+                <th>Mode</th>
+                <th>Location</th>
+                <th>Comments</th>
+            </tr>
+           {% for item in spots %} {% if item.comments != "QRT" %}
+                <tr><td>{{ item.frequency }}</td> 
+                    <td>{{ item.activator }}</td>
+                    <td>{{ item.reference }}</td>
+                    <td>{{ item.mode }}</td>
+                    <td>{{ item.locationDesc }}</td>
+                    <td>{{ item.comments }}</td>
+           {% endif %} {% endfor %}
+       </ul>
+ 
+    </body>
+</html>

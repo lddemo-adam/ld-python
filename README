@@ -1,0 +1,24 @@
+Public demonstration app for LaunchDarkly Release, Targeting, and Experimentation controls.
+By Adam Smith, lddemo@adamooo.com, June 2025
+Hosted at: https://github.com/lddemo-adam/ld-demo-one
+This probably won't get maintained for long.
+
+NOTES / PREREQUISITES
+I assume system/local installation of recent Python 3, pip, and virtualenv tooling available.  At time of development Python 3.13.4 was used.  The app requires internet connectivity to a public website (pota.app).  
+
+SETUP
+* Clone the project from GitHub: <link>
+* In the project directory, create a virtual environment using IDE or e.g. "python -m venv ./.venv" (adjust to your python path as needed).  
+* Activate the venv with e.g. "source .venv/bin/activate". 
+* Install Flask with e.g. "python -m pip install flask" which should result in something like: "Successfully installed blinker-1.9.0 click-8.2.1 flask-3.1.1 itsdangerous-2.2.0 jinja2-3.1.6 markupsafe-3.0.2 werkzeug-3.1.3".
+* Install the Requests module with e.g. "python -m pip install requests" which should results in something like: "Successfully installed certifi-2025.4.26 charset_normalizer-3.4.2 idna-3.10 requests-2.32.4 urllib3-2.4.0"
+Note: Varying packages for dependencies may be installed depending on your local environment.
+
+EXECUTION
+Run the application with:
+    % cd python-ld-demo
+    % python -m flask run 
+    // optionally with IP/port specified: --host=127.0.0.1 --port=5000
+
+CLEANUP 
+Exit the venv with "deactivate" command.
