@@ -1,6 +1,6 @@
 # Flask container for Python LaunchDarkly Demo
 # Adam Smith <lddemo@adamooo.com>
-# original structure derived from https://code.visualstudio.com/docs/python/tutorial-flask
+# Flask app structure derived from https://code.visualstudio.com/docs/python/tutorial-flask
 # POTA JSON data access and handling derived from: https://www.kc8jc.com/2023/02/02/simple-pota-hunter-script/
 
 import re
@@ -10,7 +10,6 @@ from flask import Flask
 from flask import render_template
 
 app = Flask(__name__)
-
 
 @app.route("/")
 def home():
