@@ -6,52 +6,103 @@
 
 import re
 from datetime import datetime
+import shelve
+import atexit
 
-from flask import Flask
+from flask import Flask, request   # NOTE: request is distinct from the requests package used to retrieve POTA.app data in spots()
 from flask import render_template
 
 import ldclient
 from ldclient.config import Config
 from ldclient import Context
 
-# LaunchDarkly SDK setup - substitute with your own SDK key and feature flag key
+### LaunchDarkly SDK setup
+# Substitute with your own SDK key and feature flag key
 # SDK keys for demo: Test environment: sdk-fad800e4-2188-45ce-aac0-27a022667260
 #                   Production environment: sdk-bd1e3e0d-121d-4166-aacb-5757ec9efbfb
+# In a real application, you would not hard-code these values but rather use environment variables or a secure vault, etc
 sdk_key = "sdk-fad800e4-2188-45ce-aac0-27a022667260"
 # Feature flag key for demo: demo-feature
 feature_flag_key = "demo-feature"
 
-if __name__ == "__main__":
-    if not sdk_key:
-        print("*** Please set the SDK key in code before running the demo")
-        exit()
-    if not feature_flag_key:
-        print("*** Please set the flag key in code before running the demo")
-        exit()
+###
+### Functions for LaunchDarkly SDK access and handling setup/termination of the app
+###
 
+# Initialize the LD client with the configured SDK key and check that it is ready to use (exit on failure)
+def setup_ld_client():
     ldclient.set_config(Config(sdk_key))
-
+    my_client = ldclient.get()
     # check that the SDK  initialized successfully
-    if not ldclient.get().is_initialized():
+    if not my_client.is_initialized():
         print("*** SDK failed to initialize. Please check your internet connection and SDK credential for any typo.")
         exit()
-    print("*** SDK successfully initialized")
+    else:
+        print("*** SDK successfully initialized")
+    return my_client
+
+# Get the value of the demo feature flag for the user name specified in URL parameter "user".  
+# For demo purposes, if no user is specified, it defaults to 'Demo User'.
+def get_demo_flag():
+    username = request.args.get('user', 'Demo User')   
+    # Set up the evaluation context. If a user name is passed in a query parameter, 
+    # use that; otherwise, use a default.
+    if (not username): # if no username is provided, default to 'Demo User'
+        username = 'Demo User'
+        usertype = 'demo_user'
+    elif username.startswith("Demo"): # usernames starting with "Demo" are given a different usertype
+        usertype = 'demo_user'
+    else:
+        usertype = 'named-user'
+
+    # build user and usertype contexts for flag evaluation
+    userctx = \
+        Context.builder(f"UserKey-Demo-{username}").kind('user').name(username).build()
+    typectx = \
+        Context.builder(f"TypeKey-Demo-{username}").kind('type').name(usertype).build()
+    # get the flag value for the given context(s)
+    return client.variation(feature_flag_key, Context.create_multi(userctx, typectx), False)
+
+def cleanup_on_exit():
+    print("Flask application is shutting down. Performing cleanup...")
+    # Add your cleanup logic here, e.g., closing database connections
+    app_data.close()  # Close the shelve database
+
+
+###
+### "Main" application code to init LD and start Flask
+###
+
+# Check that LaunchDarkly key values are set, and test client initialization; exit on failure
+if not sdk_key:
+    print("*** Please set the SDK key in code before running the demo")
+    exit()
+if not feature_flag_key:
+    print("*** Please set the flag key in code before running the demo")
+    exit()
+print(f"*** Using LaunchDarkly SDK key: {sdk_key}")
+
+ldclient.set_config(Config(sdk_key))
+
+# Initialize the LaunchDarkly client to check that connectivity and keys are good
+client = setup_ld_client()
+
+# Open a shelf for a small amount of persistent app data
+app_data = shelve.open("app_data.db", flag='c', writeback=True)
+app_data['runtime'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+if not 'thumbs_up' in app_data: # if this is the first run, set thumbs-up count to 0
+    app_data['thumbs_up'] = 0
+if not 'thumbs_down' in app_data: # if this is the first run, set thumbs-down count to 0
+    app_data['thumbs_down'] = 0
 
 app = Flask(__name__)
+atexit.register(cleanup_on_exit)
 
 
-@app.route("/")
-def home():
-    return "Hello, Flask!"
+###
+### Route-specific functions for handling requests
+###
 
-@app.route("/hello/")
-@app.route("/hello/<name>")
-def hello_there(name = None):
-    return render_template(
-        "hello_there.html",
-        name=name,
-        date=datetime.now()
-    )
 
 @app.route("/spots/")
 @app.route("/spots/mode/<mode>")
@@ -60,7 +111,12 @@ def hello_there(name = None):
 @app.route("/spots/locs/<locations>/mode/<mode>")
 def spots(mode=None, locations="US-"): # default to no mode filter and all US locations :)
     import json
-    import requests
+    import requests   # again note, this is the requests package, not Flask's inbound "request"
+
+    # get an LD client - will exit if network or keys are not set up correctly
+    client = ldclient.get()
+    # get the value of the demonstration feature flag 
+    feature_enabled = get_demo_flag()
 
     response = requests.get("https://api.pota.app/spot/activator")
     spots = json.loads(response.text)
@@ -70,13 +126,13 @@ def spots(mode=None, locations="US-"): # default to no mode filter and all US lo
     filtered_spots = []
     for spot in spots:
         if mode is None or spot["mode"] == mode:
-            #if spot["locationDesc"] in my_targets:
-            #if any (re.match(rf"\b{target}\b", spot["locationDesc"]) for target in my_targets.split(",")):                
             for target in my_targets.split(","):
                 # Check if the spot's location matches any of the specified (or default) locations
-                if re.match(rf"\b{target}\b", spot["locationDesc"]):
-                    # If it does, add it to the filtered list
-                    filtered_spots.append(spot)
+                if re.search(f",{target}", f",{spot["locationDesc"]}"):
+                    # If everything matches, add it to the filtered list
+                    # But first, if feature flag turned on then filter out any spots with "QRT" in the comments
+                    if not (feature_enabled and spot["comments"].count("QRT")):
+                        filtered_spots.append(spot)
                     break
 
     return render_template(
@@ -86,27 +142,30 @@ def spots(mode=None, locations="US-"): # default to no mode filter and all US lo
         spots=filtered_spots,
         mode=mode,
         locs=locations,
-        date=datetime.now()
+        date=datetime.now(),
+        user=request.args.get('user', 'Demo User')
     )
 
 @app.route("/test/flag")
 def test_flag():
-    ldclient.set_config(Config(sdk_key))
-    # check that the SDK  initialized successfully
-    if not ldclient.get().is_initialized():
-        print("*** SDK failed to initialize. Please check your internet connection and SDK credential for any typo.")
-        exit()
-    print("*** SDK successfully initialized")
+    # get an LD client - will exit if network or keys are not set up correctly
+    client = setup_ld_client()
+    # use the client to check the value of the feature flag
+    flag_value = get_demo_flag()
 
-    # Set up the evaluation context. This context should appear on your
-    # LaunchDarkly contexts dashboard soon after you run the demo.
-    context = \
-        Context.builder('example-user-key').kind('user').name('Demo User').build()
+    return f"Flag name: \"{feature_flag_key}\" has value: \"{flag_value}\" for user: " + request.args.get('user', 'Demo User')
 
-    flag_value = ldclient.get().variation(feature_flag_key, context, False)
-    
-    return f"Flag name: \"{feature_flag_key}\" has value: \"{flag_value}\""
-
+@app.route("/")
+@app.route("/index.html")
 @app.route("/about/")
 def about():
-    return "This demonstration app queries the public Parks On The Air API for activator spots and displays them based on the selected mode. You can filter by mode or see all spots."
+    return app.send_static_file("about.html")
+
+@app.route("/hello/")
+@app.route("/hello/<name>")
+def hello_there(name = None):
+    return render_template(
+        "hello_there.html",
+        name=name,
+        date=datetime.now()
+    )

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>POTA Spots Demo App</title>
+    </head>
+    <body>
+        <h1>Demonstration App for LaunchDarkly</h1>
+        <p>This demonstration app queries the public Parks On The Air API for activator spots and displays them based on the selected mode. </p>
+        <p>You can filter by mode (e.g. SSB, CW, FT8) and/or by the listed entities (initial character match).</p>
+        <h2>About POTA Spots</h2>
+        <p>Parks on the Air (POTA) is a popular amateur radio program that encourages operators to "activate" state and national parks,
+promoting outdoor operation and public awareness of amateur radio.</p>>
+        <p>Given the broad activity in the program, there should be some spots at most times of the day, especially US daytime and evening.</p>
+        <p>If no spots are shown, consider removing any mode or location filter</p>
+        <h2>Usage</h2>
+        <p>Request "http://.../spots/" to retrieve an unfiltered list of all current POTA spots.</p>
+        <p>Optionally:</p>
+        <dl>
+            <dt>Filter by Modes</dt>
+            <dd>Use .../mode/FT8,CW to filter by mode. Multiple modes can be specified.</dd>
+            <dt>Filter by Locations</dt>
+            <dd>Use .../locs/US-CA,US-MA to filter by location. Multiple locations can be specified.</dd>
+            <dt>Combined Filters</dt>
+            <dd>Use .../mode/SSB/locs/US-,CA- to filter by both mode and location.</dd>
+            <dt>User Name</dt>
+            <dd>To specify a user name, add a request parameter like "...?user=<em>UserName</em>".  This works with or without filters in the path.</dd>
+        </dl>
+    </body>
+</html>

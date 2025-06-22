@@ -6,8 +6,10 @@
     </head>
     <body>
         It's {{ date.strftime("%A, %d %B, %Y at %X") }} and {{ count }} POTA spots were retrieved.<br />
+        The current user is {{ user }}.
+        <br />
         {%if mode or locs %}
-            <strong>Filtered {{ selected }} spots</strong> for:
+            <strong>Filtered {{ selected }} spots</strong> matching:
                 {%if mode %} mode={{ mode }} {% endif %} 
                 {%if mode and locs %} and {% endif %}
                 {%if locs %} locations={{ locs }} {% endif %}
@@ -24,15 +26,24 @@
                 <th>Location</th>
                 <th>Comments</th>
             </tr>
-           {% for item in spots %} {% if item.comments != "QRT" %}
+            {% for item in spots %}
+                {% set moreLocs = item.locationDesc.count(',') %}
+                {% if moreLocs %}
+                    {% set firstLoc = item.locationDesc.split(',')[0] ~ '+' ~ moreLocs %}
+                {% else %}
+                    {% set firstLoc = item.locationDesc %}
+                {% endif %}
                 <tr><td>{{ item.frequency }}</td> 
                     <td>{{ item.activator }}</td>
                     <td>{{ item.reference }}</td>
                     <td>{{ item.mode }}</td>
-                    <td>{{ item.locationDesc }}</td>
+                    <td>{{ firstLoc }}</td>
                     <td>{{ item.comments }}</td>
-           {% endif %} {% endfor %}
-       </ul>
- 
+                </tr>
+           {% endfor %}
+        </ul>
+
+        <script type="text/javascript" src="{{ url_for('static', filename='js/flag_listener.js') }}"></script>
+
     </body>
 </html>
