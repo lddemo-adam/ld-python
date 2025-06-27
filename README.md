@@ -32,7 +32,6 @@ Data persistence uses Python Shelve (pickle, DBM) functionality and will create 
 
 ## EXECUTION
 Run the application with:
-    % cd python-ld-demo
     % python -m flask run 
     // optionally with IP/port specified: --host=127.0.0.1 --port=5000
 

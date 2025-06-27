@@ -17,13 +17,15 @@ from ldclient.config import Config
 from ldclient import Context
 
 ### LaunchDarkly SDK setup
-# Substitute with your own SDK key and feature flag key
+# Substitute with your own SDK and feature flag keys, and client side ID for JS on page
 # SDK keys for demo: Test environment: sdk-fad800e4-2188-45ce-aac0-27a022667260
 #                   Production environment: sdk-bd1e3e0d-121d-4166-aacb-5757ec9efbfb
 # In a real application, you would not hard-code these values but rather use environment variables or a secure vault, etc
 sdk_key = "sdk-fad800e4-2188-45ce-aac0-27a022667260"
 # Feature flag key for demo: demo-feature
 feature_flag_key = "demo-feature"
+# Client side ID for JS in active page.  Test env "6849a0b7a955ff0926acc10e", Production env "6849a0b7a955ff0926acc10f"
+client_side_id = "6849a0b7a955ff0926acc10e"
 
 ###
 ### Functions for LaunchDarkly SDK access and handling setup/termination of the app
@@ -143,7 +145,8 @@ def spots(mode=None, locations="US-"): # default to no mode filter and all US lo
         mode=mode,
         locs=locations,
         date=datetime.now(),
-        user=request.args.get('user', 'Demo User')
+        user=request.args.get('user', 'Demo User'),  # pass user name from URL args, or default value
+        client_id=client_side_id
     )
 
 @app.route("/test/flag")

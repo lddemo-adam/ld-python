@@ -41,9 +41,13 @@
                     <td>{{ item.comments }}</td>
                 </tr>
            {% endfor %}
-        </ul>
+        </table>
 
-        <script type="text/javascript" src="{{ url_for('static', filename='js/flag_listener.js') }}"></script>
-
+        <script src="https://unpkg.com/launchdarkly-js-client-sdk@3"></script>
+        <script id="LD_listener" type="text/javascript" 
+            src="{{ url_for('static', filename='js/flag_listener.js') }}" 
+            data-clientid="{{ client_id }}" data-featurekey="{{ feature_flag_key }}">
+        </script>
+        <script src="{{ url_for('static', filename='js/close_listener.js') }}"></script>
     </body>
 </html>

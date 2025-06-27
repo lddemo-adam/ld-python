@@ -6,12 +6,14 @@
     </head>
     <body>
         <h1>Demonstration App for LaunchDarkly</h1>
-        <p>This demonstration app queries the public Parks On The Air API for activator spots and displays them based on the selected mode. </p>
-        <p>You can filter by mode (e.g. SSB, CW, FT8) and/or by the listed entities (initial character match).</p>
+        <p>This demonstration app queries the public Parks On The Air API for "spots" showing amateur radio 
+            operators currently advertising a park operation, and displays them based on the selected mode. </p>
+        <p>You can filter by mode (e.g. SSB, CW, FT8) and/or by the listed entities (leading string match).</p>
         <h2>About POTA Spots</h2>
         <p>Parks on the Air (POTA) is a popular amateur radio program that encourages operators to "activate" state and national parks,
-promoting outdoor operation and public awareness of amateur radio.</p>>
-        <p>Given the broad activity in the program, there should be some spots at most times of the day, especially US daytime and evening.</p>
+promoting outdoor operation and public awareness of amateur radio.</p>
+        <p>Given the broad activity in the program, there should be some spots at most times of the day, 
+            especially US daytime and evening.</p>
         <p>If no spots are shown, consider removing any mode or location filter</p>
         <h2>Usage</h2>
         <p>Request "http://.../spots/" to retrieve an unfiltered list of all current POTA spots.</p>
