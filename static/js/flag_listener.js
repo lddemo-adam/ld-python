@@ -19,14 +19,18 @@ const client = LDClient.initialize(my_client_id, { key: 'user-key' });
 client.on('ready', console.log("LD client ready for use."));
 
 // TODO: flag name is hard coded here (twice)
+
+// NOTE: .on("update") came from some example code but in practice I find .on("change") is what fires.
+//        May be able to remove  this call.
 client.on("update:demo-feature", function() {
     console.log("LD flag 'demo-feature' has been updated.");
     const newShowFeature = client.variation("demo-feature", false);
     console.log("New value for specific flag:", newShowFeature);
 });
 
-client.on("change:demo-feature", function() {
-    console.log("LD flag 'demo-feature' has been updated.");
-    const newShowFeature = client.variation("demo-feature", false);
-    console.log("New value for specific flag:", newShowFeature);
+client.on("change:demo-feature", (newVal, prevVal) => {
+    console.log("LD flag 'demo-feature' has been changed.");
+//    const newShowFeature = client.variation("demo-feature", false);
+    console.log("Flag is now: ", newVal, " (was:", prevVal, ").");
+    if ((typeof prevVal !== 'undefined') && (newVal != prevVal)) { location.reload(true) };
 }); 

@@ -16,6 +16,13 @@
         {% else %}
             Showing unfiltered current spots.  Provide /mode/SSB,FT8 or e.g. /locs/US-CA,US-MA to filter.
         {% endif %}
+        <br />
+        The QRT spot suppression feature is 
+        {%if qrt >= 0 %}
+                <strong>enabled</strong> ({{ qrt }} spots removed).
+        {% else %}
+            disabled (QRT spots will appear in list).
+        {% endif %}
         <br /> <br />
         </div><div id="pota.spots">
         <table>

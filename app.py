@@ -5,9 +5,10 @@
 # LaunchDarkly Python SDK tutorial: https://launchdarkly.com/docs/sdk/server-side/python
 
 import re
-from datetime import datetime
 import shelve
 import atexit
+
+from datetime import datetime
 
 from flask import Flask, request   # NOTE: request is distinct from the requests package used to retrieve POTA.app data in spots()
 from flask import render_template
@@ -126,6 +127,7 @@ def spots(mode=None, locations="US-"): # default to no mode filter and all US lo
     my_targets = locations
 
     filtered_spots = []
+    qrt_count = 0;
     for spot in spots:
         if mode is None or spot["mode"] == mode:
             for target in my_targets.split(","):
@@ -133,15 +135,19 @@ def spots(mode=None, locations="US-"): # default to no mode filter and all US lo
                 if re.search(f",{target}", f",{spot["locationDesc"]}"):
                     # If everything matches, add it to the filtered list
                     # But first, if feature flag turned on then filter out any spots with "QRT" in the comments
-                    if not (feature_enabled and spot["comments"].count("QRT")):
+                    if(feature_enabled and re.search("qrt",  spot["comments"], re.IGNORECASE)):
+                        qrt_count += 1;
+                    else:
                         filtered_spots.append(spot)
                     break
+    if not feature_enabled: qrt_count = -1;
 
     return render_template(
         "spots.html",
         count=len(spots),
         selected=len(filtered_spots),
         spots=filtered_spots,
+        qrt=qrt_count,
         mode=mode,
         locs=locations,
         date=datetime.now(),
