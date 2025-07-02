@@ -4,7 +4,7 @@
         <meta charset="utf-8" />
         <title>Current POTA Spots</title>
     </head>
-    <body>
+    <body><div id="pota.header">
         It's {{ date.strftime("%A, %d %B, %Y at %X") }} and {{ count }} POTA spots were retrieved.<br />
         The current user is {{ user }}.
         <br />
@@ -17,6 +17,7 @@
             Showing unfiltered current spots.  Provide /mode/SSB,FT8 or e.g. /locs/US-CA,US-MA to filter.
         {% endif %}
         <br /> <br />
+        </div><div id="pota.spots">
         <table>
             <tr>
                 <th>Frequency</th>
@@ -42,7 +43,8 @@
                 </tr>
            {% endfor %}
         </table>
-
+        </div><div id="pota.footer">
+        </div>
         <script src="https://unpkg.com/launchdarkly-js-client-sdk@3"></script>
         <script id="LD_listener" type="text/javascript" 
             src="{{ url_for('static', filename='js/flag_listener.js') }}" 
