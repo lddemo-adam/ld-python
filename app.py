@@ -18,7 +18,7 @@ from ldclient.config import Config
 from ldclient import Context
 
 ### LaunchDarkly SDK setup
-# Substitute with your own SDK and feature flag keys, and client side ID for JS on page
+# Substitute with your own values if using an alternate LD account or setup from the demo one.
 # SDK keys for demo: Test environment: sdk-fad800e4-2188-45ce-aac0-27a022667260
 #                   Production environment: sdk-bd1e3e0d-121d-4166-aacb-5757ec9efbfb
 # In a real application, you would not hard-code these values but rather use environment variables or a secure vault, etc
@@ -27,6 +27,12 @@ sdk_key = "sdk-fad800e4-2188-45ce-aac0-27a022667260"
 feature_flag_key = "demo-feature"
 # Client side ID for JS in active page.  Test env "6849a0b7a955ff0926acc10e", Production env "6849a0b7a955ff0926acc10f"
 client_side_id = "6849a0b7a955ff0926acc10e"
+# API access token - in a real application this would probably be created as a Service token,
+# and would definitely be stored and injected more securely into a trusted integration/admin app.
+api_token = "api-c6bf94c3-6c7d-4089-bdb0-ab784558ed71"
+# Other keys for API requests - specify the Project and Environment
+project_key =  "default"    # e.g.  "default"
+env_key = "test"            # e.g. "test" or "production"
 
 ###
 ### Functions for LaunchDarkly SDK access and handling setup/termination of the app
@@ -178,3 +184,33 @@ def hello_there(name = None):
         name=name,
         date=datetime.now()
     )
+
+@app.route("/admin/flag/update/")
+@app.route("/admin/flag/update/<action>")
+def admin_flag_update(p_key = project_key,  f_key = feature_flag_key, token = api_token, action = "none"):
+    import json
+    import requests   # again note, this is the requests package, not Flask's inbound "request"
+
+    if(action == "turnFlagOn" or action == "turnFlagOff"):
+        req_url = f"https://app.launchdarkly.com/api/v2/flags/{p_key}/{f_key}"
+        req_headers = {
+            "LD-API-Version": "20240415",
+            "Authorization": token,
+            "Content-Type": "application/json; domain-model=launchdarkly.semanticpatch"
+        }
+        req_payload = f"{{ \"environmentKey\": \"{env_key}\", \
+            \"comment\": \"action via app admin endpoint: {action}\",\
+            \"instructions\": \
+                [{{ \"kind\": \"{action}\" }}] }}"
+
+        response = requests.patch(req_url, headers=req_headers, data=req_payload)
+        result = json.loads(response.text)
+
+        return f"Admin update attempted {action} for flag {f_key}: <br>\
+                Response was: <em>{result}</em><br>\
+            Debug:<br>\
+            {req_url}<br>\
+            {req_headers}<br>\
+            {req_payload}"
+    else:
+        return f"To update flag {f_key} add .../turnFlagOn or .../turnFlagOff to URL"
