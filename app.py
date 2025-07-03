@@ -23,14 +23,15 @@ from ldclient import Context
 #                   Production environment: sdk-bd1e3e0d-121d-4166-aacb-5757ec9efbfb
 # In a real application, you would not hard-code these values but rather use environment variables or a secure vault, etc
 sdk_key = "sdk-fad800e4-2188-45ce-aac0-27a022667260"
-# Feature flag key for demo: demo-feature
+# Feature flag key (default for demo: "demo-feature" and for beta: "beta-feature"
 feature_flag_key = "demo-feature"
+beta_flag_key =  "beta-feature"
 # Client side ID for JS in active page.  Test env "6849a0b7a955ff0926acc10e", Production env "6849a0b7a955ff0926acc10f"
 client_side_id = "6849a0b7a955ff0926acc10e"
-# API access token - in a real application this would probably be created as a Service token,
+# API access token - in a real application this would probably be created as a Service token in LD,
 # and would definitely be stored and injected more securely into a trusted integration/admin app.
 api_token = "api-c6bf94c3-6c7d-4089-bdb0-ab784558ed71"
-# Other keys for API requests - specify the Project and Environment
+# Additional keys for API requests - specify the Project and Environment
 project_key =  "default"    # e.g.  "default"
 env_key = "test"            # e.g. "test" or "production"
 
@@ -53,24 +54,30 @@ def setup_ld_client():
 # Get the value of the demo feature flag for the user name specified in URL parameter "user".  
 # For demo purposes, if no user is specified, it defaults to 'Demo User'.
 def get_demo_flag():
+    return get_flag_val(feature_flag_key)
+
+def get_beta_flag():
+    return get_flag_val(beta_flag_key)
+
+def get_flag_val(flag_key = feature_flag_key):
     username = request.args.get('user', 'Demo User')   
     # Set up the evaluation context. If a user name is passed in a query parameter, 
     # use that; otherwise, use a default.
     if (not username): # if no username is provided, default to 'Demo User'
         username = 'Demo User'
-        usertype = 'demo_user'
+        usertype = 'demouser'
     elif username.startswith("Demo"): # usernames starting with "Demo" are given a different usertype
-        usertype = 'demo_user'
-    else:
-        usertype = 'named-user'
+        usertype = 'demouser'
+    else:                             #  usernames not starting with "Demo" may get beta functionality
+        usertype = 'nameduser'
 
     # build user and usertype contexts for flag evaluation
     userctx = \
         Context.builder(f"UserKey-Demo-{username}").kind('user').name(username).build()
     typectx = \
-        Context.builder(f"TypeKey-Demo-{username}").kind('type').name(usertype).build()
+        Context.builder(f"TypeKey-Demo-{usertype}").kind('type').name(usertype).build()
     # get the flag value for the given context(s)
-    return client.variation(feature_flag_key, Context.create_multi(userctx, typectx), False)
+    return client.variation(flag_key, Context.create_multi(userctx, typectx), False)
 
 def cleanup_on_exit():
     print("Flask application is shutting down. Performing cleanup...")
@@ -118,7 +125,8 @@ atexit.register(cleanup_on_exit)
 @app.route("/spots/locs/<locations>")
 @app.route("/spots/mode/<mode>/locs/<locations>")
 @app.route("/spots/locs/<locations>/mode/<mode>")
-def spots(mode=None, locations="US-"): # default to no mode filter and all US locations :)
+def spots(mode=None, locations=""): # default to no mode filter and all locations
+    import random
     import json
     import requests   # again note, this is the requests package, not Flask's inbound "request"
 
@@ -126,6 +134,7 @@ def spots(mode=None, locations="US-"): # default to no mode filter and all US lo
     client = ldclient.get()
     # get the value of the demonstration feature flag 
     feature_enabled = get_demo_flag()
+    beta_value = get_beta_flag()
 
     response = requests.get("https://api.pota.app/spot/activator")
     spots = json.loads(response.text)
@@ -142,9 +151,14 @@ def spots(mode=None, locations="US-"): # default to no mode filter and all US lo
                     # If everything matches, add it to the filtered list
                     # But first, if feature flag turned on then filter out any spots with "QRT" in the comments
                     if(feature_enabled and re.search("qrt",  spot["comments"], re.IGNORECASE)):
-                        qrt_count += 1;
+                        qrt_count += 1
                     else:
                         filtered_spots.append(spot)
+                        # the following is a silly bug introduced under the flagged feature, for demo narrative purposes
+                        # it causes random spots to be duplicated in the table when the feature is active
+                        if (feature_enabled and (random.randint(1,10) == 10)):
+                            filtered_spots.append(spot)
+                            print("inserting duplicate spot (intentional bug with feature enabled)")
                     break
     if not feature_enabled: qrt_count = -1;
 
@@ -158,7 +172,8 @@ def spots(mode=None, locations="US-"): # default to no mode filter and all US lo
         locs=locations,
         date=datetime.now(),
         user=request.args.get('user', 'Demo User'),  # pass user name from URL args, or default value
-        client_id=client_side_id
+        client_id=client_side_id,
+        beta_val = beta_value
     )
 
 @app.route("/test/flag")
